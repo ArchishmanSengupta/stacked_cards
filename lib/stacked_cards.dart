@@ -1,7 +1,5 @@
 library stacked_cards;
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 /// A widget that displays a stack of cards with swipe functionality.
@@ -178,7 +176,7 @@ class _StackedCardsState extends State<StackedCards>
                             ? _horizontalDragProgress == 0
                                 ? 1
                                 : (1 - _horizontalDragProgress.abs())
-                                    .clamp(0.4, 1.0)
+                                    .clamp(0.8, 1.0)
                             : 1),
                     child: SizedBox(
                       height: widget.cardHeight,
