@@ -33,30 +33,30 @@ class StackedCardsExample extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Stacked Cards Example')),
-        body: Center(
+      body: Center(
         child: StackedCards(
-          onGenerate: (index) {
-          if (index >= imageUrls.length) return Container();
-          return Container(
-            decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: NetworkImage(imageUrls[index]),
-              fit: BoxFit.cover,
-            ),
-            ),
-          );
+          cardBuilder: (index) {
+            if (index >= imageUrls.length) return Container();
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrls[index]),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            );
           },
           cardWidth: 300,
           cardHeight: 400,
           stackSpacing: 10.0,
           swipeDuration: const Duration(milliseconds: 300),
           onSwipe: (index) {
-          print('Swiped card index: $index');
+            print('Swiped card index: $index');
           },
           visibleCards: 3,
         ),
-        ),
+      ),
     );
   }
 }

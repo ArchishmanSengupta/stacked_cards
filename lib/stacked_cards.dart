@@ -4,18 +4,66 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+/// A widget that displays a stack of cards with swipe functionality.
+///
+/// The [StackedCards] widget creates a stack of cards that can be swiped left or right.
+/// Each card is generated using the [cardBuilder] callback function and can be customized
+/// with different dimensions and animations.
+///
+/// Example:
+/// ```dart
+/// StackedCards(
+///   cardBuilder: (index) => Card(
+///     child: Center(
+///       child: Text('Card $index'),
+///     ),
+///   ),
+///   cardWidth: 300,
+///   cardHeight: 400,
+///   visibleCards: 3,
+/// )
+/// ```
+///
+/// ## Key Features
+/// * Swipeable cards with smooth animations
+/// * Customizable card dimensions and spacing
+/// * Configurable number of visible cards
+/// * Callback function for swipe events
+/// * Scale and rotation effects for stacked appearance
+///
+/// ## Parameters
+/// * [cardBuilder]: Required callback that builds each card widget
+/// * [cardWidth]: Width of each card (default: 300)
+/// * [cardHeight]: Height of each card (default: 400)
+/// * [stackSpacing]: Horizontal spacing between stacked cards (default: 15.0)
+/// * [swipeDuration]: Duration of the swipe animation (default: 300ms)
+/// * [onSwipe]: Callback triggered when a card is swiped, provides the new index
+/// * [visibleCards]: Number of cards visible in the stack (default: 3)
 class StackedCards extends StatefulWidget {
-  final Widget Function(int index) onGenerate;
+  /// Callback function to build each card widget
+  final Widget Function(int index) cardBuilder;
+  
+  /// Width of each card
   final double cardWidth;
+  
+  /// Height of each card
   final double cardHeight;
+  
+  /// Horizontal spacing between stacked cards
   final double stackSpacing;
+  
+  /// Duration of the swipe animation
   final Duration swipeDuration;
+  
+  /// Callback triggered when a card is swiped
   final ValueChanged<int>? onSwipe;
+  
+  /// Number of cards visible in the stack
   final int visibleCards;
 
   const StackedCards({
     super.key,
-    required this.onGenerate,
+    required this.cardBuilder,
     this.cardWidth = 300,
     this.cardHeight = 400,
     this.stackSpacing = 15.0,
@@ -30,49 +78,59 @@ class StackedCards extends StatefulWidget {
 
 class _StackedCardsState extends State<StackedCards>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  int _currentIndex = 0;
-  Offset _dragStart = Offset.zero;
-  double _dragPosition = 0.0;
+  /// Animation controller for card animations
+  late final AnimationController _animationController;
+  
+  /// Index of the current top card
+  int _topCardIndex = 0;
+  
+  /// Starting position of drag gesture
+  Offset _dragStartPosition = Offset.zero;
+  
+  /// Current horizontal drag offset
+  double _horizontalDragOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _animationController = AnimationController(
       vsync: this,
       duration: widget.swipeDuration,
     );
   }
 
+  /// Handles the start of drag gesture
   void _onPanStart(DragStartDetails details) {
-    _dragStart = details.globalPosition;
+    _dragStartPosition = details.globalPosition;
   }
 
+  /// Updates card position during drag
   void _onPanUpdate(DragUpdateDetails details) {
-    final dx = details.globalPosition.dx - _dragStart.dx;
+    final horizontalDelta = details.globalPosition.dx - _dragStartPosition.dx;
     setState(() {
-      _dragPosition = dx;
+      _horizontalDragOffset = horizontalDelta;
     });
   }
 
+  /// Handles drag completion and card snapping
   void _onPanEnd(DragEndDetails details) {
     final velocity = details.velocity.pixelsPerSecond.dx;
-    if (_dragPosition.abs() > widget.cardWidth / 4 || velocity.abs() > 300) {
+    final shouldSwipe = _horizontalDragOffset.abs() > widget.cardWidth / 4 || 
+                       velocity.abs() > 300;
+
+    if (shouldSwipe) {
       setState(() {
-        if (_dragPosition > 0) {
-          _currentIndex =
-              (_currentIndex - 1 + widget.visibleCards) % widget.visibleCards;
+        if (_horizontalDragOffset > 0) {
+          _topCardIndex = (_topCardIndex - 1 + widget.visibleCards) % widget.visibleCards;
         } else {
-          _currentIndex = (_currentIndex + 1) % widget.visibleCards;
+          _topCardIndex = (_topCardIndex + 1) % widget.visibleCards;
         }
-        _dragPosition = 0;
+        _horizontalDragOffset = 0;
       });
-      if (widget.onSwipe != null) {
-        widget.onSwipe!(_currentIndex);
-      }
+      widget.onSwipe?.call(_topCardIndex);
     } else {
       setState(() {
-        _dragPosition = 0;
+        _horizontalDragOffset = 0;
       });
     }
   }
@@ -87,28 +145,27 @@ class _StackedCardsState extends State<StackedCards>
         clipBehavior: Clip.none,
         children: List.generate(widget.visibleCards, (index) {
           final isTopCard = index == 0;
-          final cardIndex =
-              (_currentIndex + index) % widget.visibleCards;
+          final cardIndex = (_topCardIndex + index) % widget.visibleCards;
 
-          final double scale = 1.0 - (index * 0.05);
-          final double rotation = index * 0.025;
-          final double translateX = index * widget.stackSpacing;
+          final double scaleOffset = 1.0 - (index * 0.05);
+          final double rotationAngle = index * 0.025;
+          final double horizontalOffset = index * widget.stackSpacing;
 
           return Positioned(
             top: index * 2.0,
             left: 0,
             child: Transform.translate(
-              offset: Offset(isTopCard ? _dragPosition : translateX, 0),
+              offset: Offset(isTopCard ? _horizontalDragOffset : horizontalOffset, 0),
               child: Transform.rotate(
                 angle: isTopCard
-                    ? (_dragPosition / widget.cardWidth) * 0.4
-                    : rotation,
+                    ? (_horizontalDragOffset / widget.cardWidth) * 0.4
+                    : rotationAngle,
                 child: Transform.scale(
-                  scale: scale,
+                  scale: scaleOffset,
                   child: SizedBox(
                     height: widget.cardHeight,
                     width: widget.cardWidth,
-                    child: widget.onGenerate(cardIndex),
+                    child: widget.cardBuilder(cardIndex),
                   ),
                 ),
               ),
@@ -121,7 +178,7 @@ class _StackedCardsState extends State<StackedCards>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 }
