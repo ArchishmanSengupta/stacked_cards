@@ -42,22 +42,22 @@ import 'package:flutter/material.dart';
 class StackedCards extends StatefulWidget {
   /// Callback function to build each card widget
   final Widget Function(int index) cardBuilder;
-  
+
   /// Width of each card
   final double cardWidth;
-  
+
   /// Height of each card
   final double cardHeight;
-  
+
   /// Horizontal spacing between stacked cards
   final double stackSpacing;
-  
+
   /// Duration of the swipe animation
   final Duration swipeDuration;
-  
+
   /// Callback triggered when a card is swiped
   final ValueChanged<int>? onSwipe;
-  
+
   /// Number of cards visible in the stack
   final int visibleCards;
 
@@ -80,18 +80,18 @@ class _StackedCardsState extends State<StackedCards>
     with SingleTickerProviderStateMixin {
   /// Animation controller for card animations
   late final AnimationController _animationController;
-  
+
   /// Index of the current top card
   int _topCardIndex = 0;
-  
+
   /// Starting position of drag gesture
   Offset _dragStartPosition = Offset.zero;
-  
+
   /// Current horizontal drag offset
   double _horizontalDragOffset = 0.0;
 
-
-  double get _horizontalDragProgress =>  _horizontalDragOffset.abs() / widget.cardWidth;
+  double get _horizontalDragProgress =>
+      _horizontalDragOffset.abs() / widget.cardWidth;
 
   @override
   void initState() {
@@ -118,13 +118,14 @@ class _StackedCardsState extends State<StackedCards>
   /// Handles drag completion and card snapping
   void _onPanEnd(DragEndDetails details) {
     final velocity = details.velocity.pixelsPerSecond.dx;
-    final shouldSwipe = _horizontalDragOffset.abs() > widget.cardWidth / 4 || 
-                       velocity.abs() > 300;
+    final shouldSwipe = _horizontalDragOffset.abs() > widget.cardWidth / 4 ||
+        velocity.abs() > 300;
 
     if (shouldSwipe) {
       setState(() {
         if (_horizontalDragOffset > 0) {
-          _topCardIndex = (_topCardIndex - 1 + widget.visibleCards) % widget.visibleCards;
+          _topCardIndex =
+              (_topCardIndex - 1 + widget.visibleCards) % widget.visibleCards;
         } else {
           _topCardIndex = (_topCardIndex + 1) % widget.visibleCards;
         }
@@ -157,17 +158,24 @@ class _StackedCardsState extends State<StackedCards>
           return Positioned(
             top: index * 2.0,
             left: 50,
-
             child: Transform.translate(
-              offset: Offset(isTopCard ? _horizontalDragOffset : horizontalOffset, 0),
+              offset: Offset(
+                  isTopCard ? _horizontalDragOffset : horizontalOffset, 0),
               child: Transform.rotate(
-                angle: (index%2==1?1:-1)*(isTopCard
-                    ? (_horizontalDragProgress) * 0.4
-                    : rotationAngle),
+                angle: (index % 2 == 1 ? 1 : -1) *
+                    (isTopCard
+                        ? (_horizontalDragProgress) * 0.4
+                        : rotationAngle),
                 child: Transform.translate(
-                  offset: Offset( (index%2==1?1:-5) * (isTopCard ? 0 : 10.0), 0),
+                  offset: Offset(
+                      (index % 2 == 1 ? 1 : -5) * (isTopCard ? 0 : 10.0), 0),
                   child: Transform.scale(
-                    scale: scaleOffset * (isTopCard? _horizontalDragProgress==0? 1 : min(1.0, (1/_horizontalDragProgress)) : 1),
+                    scale: scaleOffset *
+                        (isTopCard
+                            ? _horizontalDragProgress == 0
+                                ? 1
+                                : min(1.0, (1 / _horizontalDragProgress))
+                            : 1),
                     child: SizedBox(
                       height: widget.cardHeight,
                       width: widget.cardWidth,
