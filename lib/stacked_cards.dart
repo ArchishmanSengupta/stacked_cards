@@ -31,7 +31,6 @@ class StackedCards extends StatefulWidget {
 class _StackedCardsState extends State<StackedCards>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<Offset> _swipeAnimation;
   int _currentIndex = 0;
   Offset _dragStart = Offset.zero;
   double _dragPosition = 0.0;
@@ -43,10 +42,6 @@ class _StackedCardsState extends State<StackedCards>
       vsync: this,
       duration: widget.swipeDuration,
     );
-    _swipeAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(1.5, 0),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -55,26 +50,21 @@ class _StackedCardsState extends State<StackedCards>
 
   void _onPanUpdate(DragUpdateDetails details) {
     final dx = details.globalPosition.dx - _dragStart.dx;
-    if (dx.abs() > (details.globalPosition.dy - _dragStart.dy).abs()) {
-      setState(() {
-        _dragPosition = dx.clamp(-widget.cardWidth, widget.cardWidth);
-      });
-    }
+    setState(() {
+      _dragPosition = dx;
+    });
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (_dragPosition.abs() > widget.cardWidth / 3) {
-      final direction = _dragPosition > 0 ? 1 : -1;
-      _controller.forward().then((value) {
-        setState(() {
-          _currentIndex++;
-          _dragPosition = 0;
-        });
-        _controller.reset();
-        if (widget.onSwipe != null) {
-          widget.onSwipe!(_currentIndex);
-        }
+    final velocity = details.velocity.pixelsPerSecond.dx;
+    if (_dragPosition.abs() > widget.cardWidth / 4 || velocity.abs() > 300) {
+      setState(() {
+        _currentIndex++;
+        _dragPosition = 0;
       });
+      if (widget.onSwipe != null) {
+        widget.onSwipe!(_currentIndex);
+      }
     } else {
       setState(() {
         _dragPosition = 0;
@@ -90,48 +80,35 @@ class _StackedCardsState extends State<StackedCards>
       onPanEnd: _onPanEnd,
       child: Stack(
         clipBehavior: Clip.none,
-        children: List.generate(
-          math.min(widget.visibleCards, _currentIndex + 1),
-          (index) {
-            final isTopCard = index == 0;
-            final cardIndex = _currentIndex - index;
+        children: List.generate(widget.visibleCards, (index) {
+          final isTopCard = index == 0;
+          final cardIndex = _currentIndex + index;
 
-            // Calculate transform values
-            final double scale = 1.0 - (index * 0.05);
-            final double rotation = index * 0.025;
-            final double translateX = index * widget.stackSpacing;
-            final double opacity = 1.0 - (index * 0.3);
+          final double scale = 1.0 - (index * 0.05);
+          final double rotation = index * 0.025;
+          final double translateX = index * widget.stackSpacing;
 
-            return Positioned(
-              top: 0,
-              left: 0,
-              child: Transform.translate(
-                offset: Offset(isTopCard ? _dragPosition : translateX, 0),
-                child: Transform.rotate(
-                  angle: (isTopCard
-                      ? (_dragPosition / widget.cardWidth) * 0.4
-                      : rotation),
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: CustomPaint(
-                        foregroundPainter: CardShadowPainter(
-                          elevation: (widget.visibleCards - index) * 2.0,
-                        ),
-                        child: SizedBox(
-                          height: widget.cardHeight,
-                          width: widget.cardWidth,
-                          child: widget.onGenerate(cardIndex),
-                        ),
-                      ),
-                    ),
+          return Positioned(
+            top: index * 2.0,
+            left: 0,
+            child: Transform.translate(
+              offset: Offset(isTopCard ? _dragPosition : translateX, 0),
+              child: Transform.rotate(
+                angle: isTopCard
+                    ? (_dragPosition / widget.cardWidth) * 0.4
+                    : rotation,
+                child: Transform.scale(
+                  scale: scale,
+                  child: SizedBox(
+                    height: widget.cardHeight,
+                    width: widget.cardWidth,
+                    child: widget.onGenerate(cardIndex),
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }).toList().reversed.toList(),
       ),
     );
   }
@@ -141,28 +118,4 @@ class _StackedCardsState extends State<StackedCards>
     _controller.dispose();
     super.dispose();
   }
-}
-
-class CardShadowPainter extends CustomPainter {
-  final double elevation;
-
-  CardShadowPainter({this.elevation = 4.0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.2)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, elevation);
-
-    final Path shadowPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(8),
-      ));
-
-    canvas.drawPath(shadowPath, shadowPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }

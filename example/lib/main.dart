@@ -25,21 +25,30 @@ class StackedCardsExample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<String> imageUrls = [
+      'https://picsum.photos/200/300?random=1',
+      'https://picsum.photos/200/300?random=2',
+      'https://picsum.photos/200/300?random=3',
+    ];
+
     return Scaffold(
       appBar: AppBar(title: const Text('Stacked Cards Example')),
       body: Center(
         child: SizedBox(
           height: 400,
           child: StackedCards(
-            onGenerate: (index) => Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: NetworkImage('https://picsum.photos/200/300?random=$index'),
-                  fit: BoxFit.cover,
+            onGenerate: (index) {
+              if (index >= imageUrls.length) return Container();
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrls[index]),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
             cardWidth: 300,
             cardHeight: 400,
             stackSpacing: 10.0,
