@@ -37,6 +37,7 @@ import 'package:flutter/material.dart';
 /// * [swipeDuration]: Duration of the swipe animation (default: 300ms)
 /// * [onSwipe]: Callback triggered when a card is swiped, provides the new index
 /// * [visibleCards]: Number of cards visible in the stack (default: 3)
+
 class StackedCards extends StatefulWidget {
   /// Callback function to build each card widget
   final Widget Function(int index) cardBuilder;
@@ -96,7 +97,7 @@ class _StackedCardsState extends State<StackedCards>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: widget.swipeDuration,
+      duration: widget.swipeDuration * 1,
     );
   }
 
@@ -131,8 +132,10 @@ class _StackedCardsState extends State<StackedCards>
       });
       widget.onSwipe?.call(_topCardIndex);
     } else {
-      setState(() {
-        _horizontalDragOffset = 0;
+      _animationController.forward(from: 0).then((_) {
+        setState(() {
+          _horizontalDragOffset = 0;
+        });
       });
     }
   }
@@ -152,6 +155,9 @@ class _StackedCardsState extends State<StackedCards>
           final double scaleOffset = 1.0 - (index * 0.05);
           final double rotationAngle = index * 0.025;
           final double horizontalOffset = index * widget.stackSpacing;
+
+          final double dragProgress = _horizontalDragProgress;
+          final bool hideCard = dragProgress > 0.5 && isTopCard;
 
           return Positioned(
             top: index * 2.0,
@@ -178,10 +184,13 @@ class _StackedCardsState extends State<StackedCards>
                                 : (1 - _horizontalDragProgress.abs())
                                     .clamp(0.8, 1.0)
                             : 1),
-                    child: SizedBox(
-                      height: widget.cardHeight,
-                      width: widget.cardWidth,
-                      child: widget.cardBuilder(cardIndex),
+                    child: Opacity(
+                      opacity: hideCard ? 0.0 : 1.0,
+                      child: SizedBox(
+                        height: widget.cardHeight,
+                        width: widget.cardWidth,
+                        child: widget.cardBuilder(cardIndex),
+                      ),
                     ),
                   ),
                 ),
