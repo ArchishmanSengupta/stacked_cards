@@ -6,7 +6,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 }
 
 class StackedCardsExample extends StatelessWidget {
-  const StackedCardsExample({Key? key}) : super(key: key);
+  const StackedCardsExample({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,32 +33,30 @@ class StackedCardsExample extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Stacked Cards Example')),
-      body: Center(
-        child: SizedBox(
-          height: 400,
-          child: StackedCards(
-            onGenerate: (index) {
-              if (index >= imageUrls.length) return Container();
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrls[index]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-            cardWidth: 300,
-            cardHeight: 400,
-            stackSpacing: 10.0,
-            swipeDuration: const Duration(milliseconds: 300),
-            onSwipe: (index) {
-              print('Swiped card index: $index');
-            },
-          ),
+        body: Center(
+        child: StackedCards(
+          onGenerate: (index) {
+          if (index >= imageUrls.length) return Container();
+          return Container(
+            decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(
+              image: NetworkImage(imageUrls[index]),
+              fit: BoxFit.cover,
+            ),
+            ),
+          );
+          },
+          cardWidth: 300,
+          cardHeight: 400,
+          stackSpacing: 10.0,
+          swipeDuration: const Duration(milliseconds: 300),
+          onSwipe: (index) {
+          print('Swiped card index: $index');
+          },
+          visibleCards: 3,
         ),
-      ),
+        ),
     );
   }
 }
