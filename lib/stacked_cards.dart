@@ -59,7 +59,12 @@ class _StackedCardsState extends State<StackedCards>
     final velocity = details.velocity.pixelsPerSecond.dx;
     if (_dragPosition.abs() > widget.cardWidth / 4 || velocity.abs() > 300) {
       setState(() {
-        _currentIndex++;
+        if (_dragPosition > 0) {
+          _currentIndex =
+              (_currentIndex - 1 + widget.visibleCards) % widget.visibleCards;
+        } else {
+          _currentIndex = (_currentIndex + 1) % widget.visibleCards;
+        }
         _dragPosition = 0;
       });
       if (widget.onSwipe != null) {
@@ -82,7 +87,8 @@ class _StackedCardsState extends State<StackedCards>
         clipBehavior: Clip.none,
         children: List.generate(widget.visibleCards, (index) {
           final isTopCard = index == 0;
-          final cardIndex = _currentIndex + index;
+          final cardIndex =
+              (_currentIndex + index) % widget.visibleCards;
 
           final double scale = 1.0 - (index * 0.05);
           final double rotation = index * 0.025;
