@@ -20,19 +20,51 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class CardModel {
+  final String imageUrl;
+  final String title;
+  final String timeAndLoc;
+  final String streak;
+
+  const CardModel({
+    required this.imageUrl,
+    required this.title,
+    required this.timeAndLoc,
+    required this.streak,
+  });
+}
+
 class StackedCardsExample extends StatelessWidget {
   const StackedCardsExample({super.key});
 
+  static const List<CardModel> cards = [
+    CardModel(
+      title: 'Nights & Weekends',
+      timeAndLoc: '2:22 AM, SF, CA',
+      streak: 'Streak No. 678',
+      imageUrl: 'https://picsum.photos/712/400?random=1',
+    ),
+    CardModel(
+      title: 'Gym Workout',
+      timeAndLoc: '1:20 AM, SF, CA',
+      streak: 'Streak No. 212',
+      imageUrl: 'https://picsum.photos/712/400?random=2',
+    ),
+    CardModel(
+      title: 'Morning Run',
+      timeAndLoc: '6:00 AM, SF, CA',
+      streak: 'Streak No. 123',
+      imageUrl: 'https://picsum.photos/712/400?random=3',
+    ),
+    CardModel(
+      title: 'Evening Walk',
+      timeAndLoc: '7:00 PM, SF, CA',
+      streak: 'Streak No. 456',
+      imageUrl: 'https://picsum.photos/712/400?random=4',
+    ),
+  ];
   @override
   Widget build(BuildContext context) {
-    final List<String> imageUrls = [
-      'https://picsum.photos/1080/1920?random=1',
-      'https://picsum.photos/1080/1920?random=2',
-      'https://picsum.photos/1080/1920?random=3',
-      'https://picsum.photos/1080/1920?random=4',
-      'https://picsum.photos/1080/1920?random=5',
-    ];
-
     return Scaffold(
       body: Padding(
         padding:
@@ -40,7 +72,7 @@ class StackedCardsExample extends StatelessWidget {
         child: Center(
           child: StackedCards(
             cardBuilder: (index) {
-              if (index >= imageUrls.length) return Container();
+              if (index >= cards.length) return Container();
               return Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -62,7 +94,7 @@ class StackedCardsExample extends StatelessWidget {
                           borderRadius:
                               const BorderRadius.all(Radius.circular(16)),
                           image: DecorationImage(
-                            image: NetworkImage(imageUrls[index]),
+                            image: NetworkImage(cards[index].imageUrl),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -112,7 +144,7 @@ class StackedCardsExample extends StatelessWidget {
             onSwipe: (index) {
               print('Swiped card index: $index');
             },
-            visibleCards: imageUrls.length,
+            visibleCards: cards.length,
           ),
         ),
       ),
