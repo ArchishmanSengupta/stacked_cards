@@ -1,6 +1,6 @@
 library stacked_cards;
 
-import 'dart:math' as math;
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -90,6 +90,9 @@ class _StackedCardsState extends State<StackedCards>
   /// Current horizontal drag offset
   double _horizontalDragOffset = 0.0;
 
+
+  double get _horizontalDragProgress =>  _horizontalDragOffset.abs() / widget.cardWidth;
+
   @override
   void initState() {
     super.initState();
@@ -153,19 +156,23 @@ class _StackedCardsState extends State<StackedCards>
 
           return Positioned(
             top: index * 2.0,
-            left: 0,
+            left: 50,
+
             child: Transform.translate(
               offset: Offset(isTopCard ? _horizontalDragOffset : horizontalOffset, 0),
               child: Transform.rotate(
-                angle: isTopCard
-                    ? (_horizontalDragOffset / widget.cardWidth) * 0.4
-                    : rotationAngle,
-                child: Transform.scale(
-                  scale: scaleOffset,
-                  child: SizedBox(
-                    height: widget.cardHeight,
-                    width: widget.cardWidth,
-                    child: widget.cardBuilder(cardIndex),
+                angle: (index%2==1?1:-1)*(isTopCard
+                    ? (_horizontalDragProgress) * 0.4
+                    : rotationAngle),
+                child: Transform.translate(
+                  offset: Offset( (index%2==1?1:-5) * (isTopCard ? 0 : 10.0), 0),
+                  child: Transform.scale(
+                    scale: scaleOffset * (isTopCard? _horizontalDragProgress==0? 1 : min(1.0, (1/_horizontalDragProgress)) : 1),
+                    child: SizedBox(
+                      height: widget.cardHeight,
+                      width: widget.cardWidth,
+                      child: widget.cardBuilder(cardIndex),
+                    ),
                   ),
                 ),
               ),

@@ -26,9 +26,11 @@ class StackedCardsExample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<String> imageUrls = [
-      'https://picsum.photos/200/300?random=1',
-      'https://picsum.photos/200/300?random=2',
-      'https://picsum.photos/200/300?random=3',
+      'https://picsum.photos/1080/1920?random=1',
+      'https://picsum.photos/1080/1920?random=2',
+      'https://picsum.photos/1080/1920?random=3',
+      'https://picsum.photos/1080/1920?random=4',
+      'https://picsum.photos/1080/1920?random=5',
     ];
 
     return Scaffold(
@@ -54,7 +56,7 @@ class StackedCardsExample extends StatelessWidget {
           onSwipe: (index) {
             print('Swiped card index: $index');
           },
-          visibleCards: 3,
+          visibleCards: imageUrls.length,
         ),
       ),
     );
