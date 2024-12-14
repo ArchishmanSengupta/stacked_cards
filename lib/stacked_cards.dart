@@ -164,7 +164,10 @@ class _StackedCardsState extends State<StackedCards>
               child: Transform.rotate(
                 angle: (index % 2 == 1 ? 1 : -1) *
                     (isTopCard
-                        ? (_horizontalDragProgress) * 0.4
+                        ? (_horizontalDragOffset.isNegative
+                                ? _horizontalDragProgress
+                                : _horizontalDragProgress * -1) *
+                            0.5
                         : rotationAngle),
                 child: Transform.translate(
                   offset: Offset(
@@ -174,7 +177,8 @@ class _StackedCardsState extends State<StackedCards>
                         (isTopCard
                             ? _horizontalDragProgress == 0
                                 ? 1
-                                : min(1.0, (1 / _horizontalDragProgress))
+                                : (1 - _horizontalDragProgress.abs())
+                                    .clamp(0.4, 1.0)
                             : 1),
                     child: SizedBox(
                       height: widget.cardHeight,
