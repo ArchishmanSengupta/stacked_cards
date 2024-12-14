@@ -100,34 +100,34 @@ class StackedCardsExample extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Text(
-                      'Nights & Weekends',
-                      style: TextStyle(
+                    Text(
+                      cards[index].title,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
-                      '2:22 AM, SF, CA',
-                      style: TextStyle(
+                    Text(
+                      cards[index].timeAndLoc,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Streak No. 678',
-                          style: TextStyle(
+                          cards[index].streak,
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Colors.orange,
                           ),
                         ),
-                        SizedBox(width: 5),
-                        Icon(
+                        const SizedBox(width: 5),
+                        const Icon(
                           Icons.local_fire_department,
                           color: Colors.orange,
                         ),
