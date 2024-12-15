@@ -40,26 +40,26 @@ class StackedCardsExample extends StatelessWidget {
   static const List<CardModel> cards = [
     CardModel(
       title: 'Nights & Weekends',
-      timeAndLoc: '2:22 AM, SF, CA',
-      streak: 'Streak No. 678',
+      timeAndLoc: '14th Jan, 2025, 2:00AM, SF, CA',
+      streak: 'Streak No. 3',
       imageUrl: 'https://picsum.photos/712/400?random=1',
     ),
     CardModel(
-      title: 'Gym Workout',
-      timeAndLoc: '1:20 AM, SF, CA',
-      streak: 'Streak No. 212',
+      title: 'Nights & Weekends',
+      timeAndLoc: '13th Jan, 2025, 2:00AM, SF, CA',
+      streak: 'Streak No. 2',
       imageUrl: 'https://picsum.photos/712/400?random=2',
     ),
     CardModel(
-      title: 'Morning Run',
-      timeAndLoc: '6:00 AM, SF, CA',
-      streak: 'Streak No. 123',
+      title: 'Nights & Weekends',
+      timeAndLoc: '12th Jan, 2025, 2:00AM, SF, CA',
+      streak: 'Streak No. 1',
       imageUrl: 'https://picsum.photos/712/400?random=3',
     ),
     CardModel(
-      title: 'Evening Walk',
-      timeAndLoc: '7:00 PM, SF, CA',
-      streak: 'Streak No. 456',
+      title: 'Nights & Weekends',
+      timeAndLoc: '11th Jan, 2025, 2:00AM, SF, CA',
+      streak: 'Streak No. 0',
       imageUrl: 'https://picsum.photos/712/400?random=4',
     ),
   ];
@@ -144,7 +144,7 @@ class StackedCardsExample extends StatelessWidget {
             onSwipe: (index) {
               print('Swiped card index: $index');
             },
-            visibleCards: cards.length,
+            cardCount: cards.length,
           ),
         ),
       ),

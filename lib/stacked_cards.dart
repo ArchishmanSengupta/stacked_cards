@@ -36,7 +36,7 @@ import 'package:flutter/material.dart';
 /// * [stackSpacing]: Horizontal spacing between stacked cards (default: 15.0)
 /// * [swipeDuration]: Duration of the swipe animation (default: 300ms)
 /// * [onSwipe]: Callback triggered when a card is swiped, provides the new index
-/// * [visibleCards]: Number of cards visible in the stack (default: 3)
+/// * [cardCount]: Number of cards visible in the stack (default: 3)
 
 class StackedCards extends StatefulWidget {
   /// Callback function to build each card widget
@@ -58,17 +58,17 @@ class StackedCards extends StatefulWidget {
   final ValueChanged<int>? onSwipe;
 
   /// Number of cards visible in the stack
-  final int visibleCards;
+  final int cardCount;
 
   const StackedCards({
     super.key,
     required this.cardBuilder,
     this.cardWidth = 300,
     this.cardHeight = 400,
-    this.stackSpacing = 15.0,
+    this.stackSpacing = 20.0,
     this.swipeDuration = const Duration(milliseconds: 300),
     this.onSwipe,
-    this.visibleCards = 3,
+    this.cardCount = 3,
   });
 
   @override
@@ -77,11 +77,9 @@ class StackedCards extends StatefulWidget {
 
 class _StackedCardsState extends State<StackedCards>
     with SingleTickerProviderStateMixin {
-  /// Animation controller for card animations
-  late final AnimationController _animationController;
+  late int _currentIndex = _initialIndex;
 
-  /// Index of the current top card
-  int _topCardIndex = 0;
+  late final _initialIndex = 0;
 
   /// Starting position of drag gesture
   Offset _dragStartPosition = Offset.zero;
@@ -90,121 +88,123 @@ class _StackedCardsState extends State<StackedCards>
   double _horizontalDragOffset = 0.0;
 
   double get _horizontalDragProgress =>
-      _horizontalDragOffset.abs() / widget.cardWidth;
+      _horizontalDragOffset / widget.cardWidth;
+
+  late final List<int> _cardIndices =
+      List.generate(widget.cardCount, (index) => index);
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: widget.swipeDuration * 1,
-    );
   }
 
   /// Handles the start of drag gesture
   void _onPanStart(DragStartDetails details) {
-    _dragStartPosition = details.globalPosition;
-  }
-
-  /// Updates card position during drag
-  void _onPanUpdate(DragUpdateDetails details) {
-    final horizontalDelta = details.globalPosition.dx - _dragStartPosition.dx;
     setState(() {
-      _horizontalDragOffset = horizontalDelta;
+      _dragStartPosition = details.globalPosition;
     });
   }
 
-  /// Handles drag completion and card snapping
-  void _onPanEnd(DragEndDetails details) {
-    final velocity = details.velocity.pixelsPerSecond.dx;
-    final shouldSwipe = _horizontalDragOffset.abs() > widget.cardWidth / 4 ||
-        velocity.abs() > 300;
+  /// Updates card position during drag
+  void _onPanUpdate(DragUpdateDetails details, int index) {
+    if (index == _currentIndex &&
+        index == 0 &&
+        details.delta.dx > 0 &&
+        _horizontalDragOffset == 0) {
+      return;
+    }
+    if (details.globalPosition.dx > _dragStartPosition.dx) {
+      return;
+    }
+    setState(() {
+      _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
+    });
+    print('progress: $_horizontalDragProgress');
+  }
 
-    if (shouldSwipe) {
-      setState(() {
-        if (_horizontalDragOffset > 0) {
-          _topCardIndex =
-              (_topCardIndex - 1 + widget.visibleCards) % widget.visibleCards;
-        } else {
-          _topCardIndex = (_topCardIndex + 1) % widget.visibleCards;
-        }
-        _horizontalDragOffset = 0;
-      });
-      widget.onSwipe?.call(_topCardIndex);
-    } else {
-      _animationController.forward(from: 0).then((_) {
-        setState(() {
-          _horizontalDragOffset = 0;
-        });
-      });
+  /// Handles drag completion and card snapping
+  void _onPanEnd(DragEndDetails details, int index) {
+    setState(() {
+      _dragStartPosition = Offset.zero;
+      _horizontalDragOffset = 0.0;
+    });
+    if (_horizontalDragProgress>0.5) {
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: _onPanStart,
-      onPanUpdate: _onPanUpdate,
-      onPanEnd: _onPanEnd,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: List.generate(widget.visibleCards, (index) {
-          final isTopCard = index == 0;
-          final cardIndex = (_topCardIndex + index) % widget.visibleCards;
-
-          final double scaleOffset = 1.0 - (index * 0.05);
-          final double rotationAngle = index * 0.025;
-          final double horizontalOffset = index * widget.stackSpacing;
-
-          final double dragProgress = _horizontalDragProgress;
-          final bool hideCard = dragProgress > 0.5 && isTopCard;
-
-          return Positioned(
-            top: index * 2.0,
-            left: 50,
-            child: Transform.translate(
-              offset: Offset(
-                  isTopCard ? _horizontalDragOffset : horizontalOffset, 0),
-              child: Transform.rotate(
-                angle: (index % 2 == 1 ? 1 : -1) *
-                    (isTopCard
-                        ? (_horizontalDragOffset.isNegative
-                                ? _horizontalDragProgress
-                                : _horizontalDragProgress * -1) *
-                            0.5
-                        : rotationAngle),
-                child: Transform.translate(
-                  offset: Offset(
-                      (index % 2 == 1 ? 1 : -5) * (isTopCard ? 0 : 10.0), 0),
-                  child: Transform.scale(
-                    scale: scaleOffset *
-                        (isTopCard
-                            ? _horizontalDragProgress == 0
-                                ? 1
-                                : (1 - _horizontalDragProgress.abs())
-                                    .clamp(0.8, 1.0)
-                            : 1),
-                    child: Opacity(
-                      opacity: hideCard ? 0.0 : 1.0,
-                      child: SizedBox(
-                        height: widget.cardHeight,
-                        width: widget.cardWidth,
-                        child: widget.cardBuilder(cardIndex),
-                      ),
-                    ),
-                  ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: _cardIndices.reversed.map((index) {
+        final offset = _getOffset(index);
+        return AnimatedPositioned(
+          duration: const Duration(milliseconds: 100),
+          top: offset.dy,
+          left: widget.cardWidth * 0.15 + offset.dx,
+          child: GestureDetector(
+            onPanStart: (det) => _onPanStart(det),
+            onPanUpdate: (delta) => _onPanUpdate(delta, index),
+            onPanCancel: () => _onPanEnd(DragEndDetails(), index),
+            onPanEnd: (det) => _onPanEnd(det, index),
+            child: Transform.rotate(
+              angle: _getAngle(index),
+              child: Transform.scale(
+                scale: _getScale(index),
+                child: SizedBox(
+                  height: widget.cardHeight,
+                  width: widget.cardWidth,
+                  child: widget.cardBuilder(index),
                 ),
               ),
             ),
-          );
-        }).toList().reversed.toList(),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  Offset _getOffset(int index) {
+    if (index == _currentIndex) {
+      if (_horizontalDragOffset.isNegative && index == 0) {
+        return Offset(_horizontalDragOffset, index * 2.0);
+      } else {
+        return Offset(_horizontalDragOffset, index * 2.0);
+      }
+    }
+    return Offset(widget.stackSpacing * index, index * 2.0);
+  }
+
+  double _getScale(int index) {
+    double scaleMultiplier = 1.0;
+    if (index == _currentIndex) {
+      if (_horizontalDragProgress > 0 && _currentIndex == 0) {
+        scaleMultiplier = 1.0;
+      } else {
+        if (_horizontalDragProgress == 0) {
+          scaleMultiplier = 1.0;
+        } else {
+          scaleMultiplier =
+              (1.0 - _horizontalDragProgress.abs()).clamp(0.6, 1.0);
+        }
+      }
+    }
+    double baseMultiPlier = 1 - (index * 0.05);
+    return baseMultiPlier * scaleMultiplier;
+  }
+
+  double _getAngle(int index) {
+    if (index == _currentIndex) {
+      if (_horizontalDragProgress > 0 && _currentIndex == 0) {
+        return 0;
+      }
+      return _horizontalDragProgress;
+    }
+
+    double rotationAngle = index * 0.02;
+
+    int multiPlier = index > _currentIndex ? 1 : -1;
+
+    return rotationAngle * multiPlier;
   }
 }
