@@ -113,9 +113,9 @@ class _StackedCardsState extends State<StackedCards>
         _horizontalDragOffset == 0) {
       return;
     }
-    // if (details.globalPosition.dx > _dragStartPosition.dx) {
-    //   return;
-    // }
+    if (details.globalPosition.dx > _dragStartPosition.dx) {
+      return;
+    }
     _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
     print('progress: $_horizontalDragProgress');
     if (_horizontalDragProgress.abs() > 0.5 && _reordersLeft > 0) {
