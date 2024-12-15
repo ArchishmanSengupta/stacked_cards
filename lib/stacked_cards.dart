@@ -113,24 +113,48 @@ class _StackedCardsState extends State<StackedCards>
         _horizontalDragOffset == 0) {
       return;
     }
-    if (details.globalPosition.dx > _dragStartPosition.dx) {
+    // if (details.globalPosition.dx > _dragStartPosition.dx) {
+    //   return;
+    // }
+    _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
+    print('progress: $_horizontalDragProgress');
+    if (_horizontalDragProgress.abs() > 0.5 && _reordersLeft > 0) {
+      _onSwipeCard(index);
+    }
+    setState(() {});
+  }
+
+  void _onSwipeCard(int index) {
+    if (index == _cardIndices.length-1) {
       return;
     }
-    setState(() {
-      _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
-    });
-    print('progress: $_horizontalDragProgress');
+    _reordersLeft = 0;
+    if (widget.onSwipe != null) {
+      widget.onSwipe!(index);
+    }
+    final element = _cardIndices.removeAt(0);
+    _cardIndices.insert(widget.cardCount - 1 - index, element);
+    print('cards: ${_cardIndices}');
+    _currentIndex++;
+    _horizontalDragOffset = 0.0;
+    print('current index: $_currentIndex');
   }
 
   /// Handles drag completion and card snapping
   void _onPanEnd(DragEndDetails details, int index) {
+    setCanReorder(true);
     setState(() {
       _dragStartPosition = Offset.zero;
       _horizontalDragOffset = 0.0;
     });
-    if (_horizontalDragProgress>0.5) {
-    }
+    if (_horizontalDragProgress > 0.5) {}
   }
+
+  void setCanReorder(bool canReorder) {
+    _reordersLeft = canReorder ? 1 : 0;
+  }
+
+  int _reordersLeft = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +169,7 @@ class _StackedCardsState extends State<StackedCards>
           child: GestureDetector(
             onPanStart: (det) => _onPanStart(det),
             onPanUpdate: (delta) => _onPanUpdate(delta, index),
+            onPanDown: (details) => setCanReorder(true),
             onPanCancel: () => _onPanEnd(DragEndDetails(), index),
             onPanEnd: (det) => _onPanEnd(det, index),
             child: Transform.rotate(
@@ -165,14 +190,14 @@ class _StackedCardsState extends State<StackedCards>
   }
 
   Offset _getOffset(int index) {
+    double dy = index * 2.0;
+    double dx;
     if (index == _currentIndex) {
-      if (_horizontalDragOffset.isNegative && index == 0) {
-        return Offset(_horizontalDragOffset, index * 2.0);
-      } else {
-        return Offset(_horizontalDragOffset, index * 2.0);
-      }
+      dx = _horizontalDragOffset;
+    } else {
+      dx = (index < _currentIndex ? -1 : 1) * index * widget.stackSpacing;
     }
-    return Offset(widget.stackSpacing * index, index * 2.0);
+    return Offset(dx, dy);
   }
 
   double _getScale(int index) {
@@ -207,4 +232,10 @@ class _StackedCardsState extends State<StackedCards>
 
     return rotationAngle * multiPlier;
   }
+}
+
+extension ListExt on List<int> {
+  // returns hash of the order of the list
+  int get orderHash =>
+      fold(0, (previousValue, element) => previousValue * 31 + element);
 }
