@@ -103,7 +103,7 @@ class _StackedCardsState extends State<StackedCards>
       vsync: this,
       duration: widget.swipeDuration,
     );
-    print(
+    (
         'initState: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
   }
 
@@ -111,7 +111,7 @@ class _StackedCardsState extends State<StackedCards>
   void dispose() {
     _controller.dispose();
     super.dispose();
-    print('dispose');
+    ('dispose');
   }
 
   /// Handles the start of drag gesture
@@ -119,7 +119,7 @@ class _StackedCardsState extends State<StackedCards>
     setState(() {
       _dragStartPosition = details.globalPosition;
     });
-    print('onPanStart: _dragStartPosition=$_dragStartPosition');
+    ('onPanStart: _dragStartPosition=$_dragStartPosition');
   }
 
   /// Updates card position during drag
@@ -127,7 +127,7 @@ class _StackedCardsState extends State<StackedCards>
     setState(() {
       _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
     });
-    print('onPanUpdate: _horizontalDragOffset=$_horizontalDragOffset');
+    ('onPanUpdate: _horizontalDragOffset=$_horizontalDragOffset');
   }
 
   /// Handles drag completion and card snapping
@@ -135,20 +135,20 @@ class _StackedCardsState extends State<StackedCards>
     final velocity = details.velocity.pixelsPerSecond.dx;
     final threshold = widget.cardWidth / 2;
 
-    print(
+    (
         'onPanEnd: velocity=$velocity, threshold=$threshold, _horizontalDragOffset=$_horizontalDragOffset');
 
     if (_horizontalDragOffset.abs() > threshold || velocity.abs() > 1000) {
       final direction = _horizontalDragOffset.isNegative ? -1 : 1;
-      print('onPanEnd: Swiping card in direction=$direction');
-      _swipeCard(direction);
+      ('onPanEnd: Swiping card in direction=$direction');
+      _swipeCard(direction, _cardIndices.first);
     } else {
-      print('onPanEnd: Resetting card');
+      ('onPanEnd: Resetting card');
       _resetCard();
     }
   }
 
-  void _swipeCard(int direction) {
+  void _swipeCard(int direction, int? firstIndex) {
     _swipeAnimation = Tween<double>(
       begin: _horizontalDragOffset,
       end: direction * widget.cardWidth,
@@ -157,12 +157,14 @@ class _StackedCardsState extends State<StackedCards>
         setState(() {
           _horizontalDragOffset = _swipeAnimation!.value;
         });
-        print('swipeCard: _horizontalDragOffset=$_horizontalDragOffset');
+        ('swipeCard: _horizontalDragOffset=$_horizontalDragOffset');
       });
 
     _controller.forward(from: 0).whenComplete(() {
       setState(() {
-        _currentIndex = (_currentIndex + direction) % widget.cardCount;
+        // _currentIndex = (_currentIndex + direction) % widget.cardCount;
+        _currentIndex =
+            firstIndex! == widget.cardCount - 1 ? 0 : firstIndex + 1;
         if (_currentIndex < 0) {
           _currentIndex += widget.cardCount;
         }
@@ -174,7 +176,7 @@ class _StackedCardsState extends State<StackedCards>
           final firstIndex = _cardIndices.removeAt(0);
           _cardIndices.add(firstIndex);
         }
-        print(
+        (
             'swipeCard complete: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
         if (widget.onSwipe != null) {
           widget.onSwipe!(_currentIndex);
@@ -192,7 +194,7 @@ class _StackedCardsState extends State<StackedCards>
         setState(() {
           _horizontalDragOffset = _swipeAnimation!.value;
         });
-        print('resetCard: _horizontalDragOffset=$_horizontalDragOffset');
+        ('resetCard: _horizontalDragOffset=$_horizontalDragOffset');
       });
 
     _controller.forward(from: 0);
@@ -200,13 +202,13 @@ class _StackedCardsState extends State<StackedCards>
 
   @override
   Widget build(BuildContext context) {
-    print('build: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
+    ('build: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
     return Stack(
       clipBehavior: Clip.none,
       children: _cardIndices.reversed.map((index) {
         final offset = _getOffset(index);
         final isBehind = index < _currentIndex;
-        print('build: index=$index, offset=$offset, isBehind=$isBehind');
+        ('build: index=$index, offset=$offset, isBehind=$isBehind');
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 100),
           top: offset.dy,
