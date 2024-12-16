@@ -77,8 +77,7 @@ class StackedCards extends StatefulWidget {
 
 class _StackedCardsState extends State<StackedCards>
     with SingleTickerProviderStateMixin {
-  late int _currentIndex = _initialIndex;
-
+  late int _currentIndex;
   late final _initialIndex = 0;
 
   /// Starting position of drag gesture
@@ -93,9 +92,26 @@ class _StackedCardsState extends State<StackedCards>
   late final List<int> _cardIndices =
       List.generate(widget.cardCount, (index) => index);
 
+  late AnimationController _controller;
+  Animation<double>? _swipeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _currentIndex = _initialIndex;
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.swipeDuration,
+    );
+    (
+        'initState: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+    ('dispose');
   }
 
   /// Handles the start of drag gesture
@@ -103,58 +119,115 @@ class _StackedCardsState extends State<StackedCards>
     setState(() {
       _dragStartPosition = details.globalPosition;
     });
+    ('onPanStart: _dragStartPosition=$_dragStartPosition');
   }
 
   /// Updates card position during drag
-  void _onPanUpdate(DragUpdateDetails details, int index) {
-    if (index == _currentIndex &&
-        index == 0 &&
-        details.delta.dx > 0 &&
-        _horizontalDragOffset == 0) {
-      return;
-    }
-    if (details.globalPosition.dx > _dragStartPosition.dx) {
-      return;
-    }
+  void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
       _horizontalDragOffset = details.globalPosition.dx - _dragStartPosition.dx;
     });
-    print('progress: $_horizontalDragProgress');
+    ('onPanUpdate: _horizontalDragOffset=$_horizontalDragOffset');
   }
 
   /// Handles drag completion and card snapping
-  void _onPanEnd(DragEndDetails details, int index) {
-    setState(() {
-      _dragStartPosition = Offset.zero;
-      _horizontalDragOffset = 0.0;
-    });
-    if (_horizontalDragProgress>0.5) {
+  void _onPanEnd(DragEndDetails details) {
+    final velocity = details.velocity.pixelsPerSecond.dx;
+    final threshold = widget.cardWidth / 2;
+
+    (
+        'onPanEnd: velocity=$velocity, threshold=$threshold, _horizontalDragOffset=$_horizontalDragOffset');
+
+    if (_horizontalDragOffset.abs() > threshold || velocity.abs() > 1000) {
+      final direction = _horizontalDragOffset.isNegative ? -1 : 1;
+      ('onPanEnd: Swiping card in direction=$direction');
+      _swipeCard(direction, _cardIndices.first);
+    } else {
+      ('onPanEnd: Resetting card');
+      _resetCard();
     }
+  }
+
+  void _swipeCard(int direction, int? firstIndex) {
+    _swipeAnimation = Tween<double>(
+      begin: _horizontalDragOffset,
+      end: direction * widget.cardWidth,
+    ).animate(_controller)
+      ..addListener(() {
+        setState(() {
+          _horizontalDragOffset = _swipeAnimation!.value;
+        });
+        ('swipeCard: _horizontalDragOffset=$_horizontalDragOffset');
+      });
+
+    _controller.forward(from: 0).whenComplete(() {
+      setState(() {
+        // _currentIndex = (_currentIndex + direction) % widget.cardCount;
+        _currentIndex =
+            firstIndex! == widget.cardCount - 1 ? 0 : firstIndex + 1;
+        if (_currentIndex < 0) {
+          _currentIndex += widget.cardCount;
+        }
+        _horizontalDragOffset = 0.0;
+        if (direction > 0) {
+          final lastIndex = _cardIndices.removeLast();
+          _cardIndices.insert(0, lastIndex);
+        } else {
+          final firstIndex = _cardIndices.removeAt(0);
+          _cardIndices.add(firstIndex);
+        }
+        (
+            'swipeCard complete: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
+        if (widget.onSwipe != null) {
+          widget.onSwipe!(_currentIndex);
+        }
+      });
+    });
+  }
+
+  void _resetCard() {
+    _swipeAnimation = Tween<double>(
+      begin: _horizontalDragOffset,
+      end: 0.0,
+    ).animate(_controller)
+      ..addListener(() {
+        setState(() {
+          _horizontalDragOffset = _swipeAnimation!.value;
+        });
+        ('resetCard: _horizontalDragOffset=$_horizontalDragOffset');
+      });
+
+    _controller.forward(from: 0);
   }
 
   @override
   Widget build(BuildContext context) {
+    ('build: _currentIndex=$_currentIndex, _cardIndices=$_cardIndices');
     return Stack(
       clipBehavior: Clip.none,
       children: _cardIndices.reversed.map((index) {
         final offset = _getOffset(index);
+        final isBehind = index < _currentIndex;
+        ('build: index=$index, offset=$offset, isBehind=$isBehind');
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 100),
           top: offset.dy,
           left: widget.cardWidth * 0.15 + offset.dx,
           child: GestureDetector(
-            onPanStart: (det) => _onPanStart(det),
-            onPanUpdate: (delta) => _onPanUpdate(delta, index),
-            onPanCancel: () => _onPanEnd(DragEndDetails(), index),
-            onPanEnd: (det) => _onPanEnd(det, index),
-            child: Transform.rotate(
-              angle: _getAngle(index),
-              child: Transform.scale(
-                scale: _getScale(index),
-                child: SizedBox(
-                  height: widget.cardHeight,
-                  width: widget.cardWidth,
-                  child: widget.cardBuilder(index),
+            onPanStart: _onPanStart,
+            onPanUpdate: _onPanUpdate,
+            onPanEnd: _onPanEnd,
+            child: Opacity(
+              opacity: isBehind ? 0.5 : 1.0,
+              child: Transform.rotate(
+                angle: _getAngle(index),
+                child: Transform.scale(
+                  scale: _getScale(index),
+                  child: SizedBox(
+                    height: widget.cardHeight,
+                    width: widget.cardWidth,
+                    child: widget.cardBuilder(index),
+                  ),
                 ),
               ),
             ),
@@ -166,45 +239,22 @@ class _StackedCardsState extends State<StackedCards>
 
   Offset _getOffset(int index) {
     if (index == _currentIndex) {
-      if (_horizontalDragOffset.isNegative && index == 0) {
-        return Offset(_horizontalDragOffset, index * 2.0);
-      } else {
-        return Offset(_horizontalDragOffset, index * 2.0);
-      }
+      return Offset(_horizontalDragOffset, index * 2.0);
     }
-    return Offset(widget.stackSpacing * index, index * 2.0);
+    final offsetMultiplier = index - _currentIndex;
+    return Offset(
+        widget.stackSpacing * offsetMultiplier, offsetMultiplier * 10.0);
   }
 
   double _getScale(int index) {
-    double scaleMultiplier = 1.0;
-    if (index == _currentIndex) {
-      if (_horizontalDragProgress > 0 && _currentIndex == 0) {
-        scaleMultiplier = 1.0;
-      } else {
-        if (_horizontalDragProgress == 0) {
-          scaleMultiplier = 1.0;
-        } else {
-          scaleMultiplier =
-              (1.0 - _horizontalDragProgress.abs()).clamp(0.6, 1.0);
-        }
-      }
-    }
-    double baseMultiPlier = 1 - (index * 0.05);
-    return baseMultiPlier * scaleMultiplier;
+    const scaleDifference = 0.05;
+    return 1.0 - ((index - _currentIndex) * scaleDifference).clamp(0.0, 0.5);
   }
 
   double _getAngle(int index) {
     if (index == _currentIndex) {
-      if (_horizontalDragProgress > 0 && _currentIndex == 0) {
-        return 0;
-      }
-      return _horizontalDragProgress;
+      return _horizontalDragProgress * 0.2;
     }
-
-    double rotationAngle = index * 0.02;
-
-    int multiPlier = index > _currentIndex ? 1 : -1;
-
-    return rotationAngle * multiPlier;
+    return 0.0;
   }
 }
